@@ -1,0 +1,54 @@
+
+tile:
+  username: user@email.com      # Tile's login
+  password: "strong password"   # Tile's password
+  # uuids (recommended) or names of tiles to track; e.g., [ "first", "second", "5839866d6c7fb752" ] 
+  # If left empty, all tiles are tracked.
+  # Names are more user friendly, uuids are safer (not affected by renames, unique).
+  # uuids are logged by the app on startup
+  tiles: []
+
+# List of geofences
+# To find long, lat coordinates:
+# 1- Open google maps in a browser
+# 2- Find your place of interest
+# 3- Right-click. Lat, long coordinates should be the first item in the menu
+geofences:
+  circles:
+    # Entry names are free-form and used for logging purposes only.
+    # Two examples are given below:
+    "Statue of liberty":
+      latitude: 40.689412
+      longitude: -74.043964
+      radius: 30 # Distance, in meters
+      # Keys are the tile uuid (recommended) or name.
+      # Values are the Hubitat "Virtual Presence" device id (integer).
+      # The Hubitat device must be exposed through Hubitat's MakerAPI.
+      # The app will switch the hubitat presence sensor to "present" or "not present"
+      # depending on if the corresponding tile is inside or outside of the given geofence.
+      tile_to_hubitat: 
+        "first": 42
+        "second": 69
+        "5839866d6c7fb752": 51
+    "Las Vegas Luxor Palace":
+      latitude: 36.095551
+      longitude: -115.175520
+      radius: 20 # Distance, in meters
+      # list of tile uuid/name and associated hubitat device id for another location.
+      # The hubitat ids should be distinct from the previous location.
+      tile_to_hubitat: 
+        "first": 73
+        "second": 47
+        "5839866d6c7fb752": 12
+
+# Connection info to the Hubitat hub.
+# Note: the device running the script and the hubitat hub need to be on the same LAN
+hubitat:
+  url: 'http://ipaddress/'               # What you type in the browser to log on to Hubitat
+  appid: 123                             # Log in to Hubitat, go in Apps, Maker API. The Id in is in the url
+  token: 'enter your hubitat token here' # Log in to Hubitat, go in Apps, Maker API, The token is in the examples
+  
+main:
+  logverbosity: INFO # by increasing level of verbosity: FATAL, ERROR, WARNING, INFO, DEBUG
+  loop_seconds: 180  # How often to check the tile APIs
+
