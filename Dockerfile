@@ -18,7 +18,7 @@ ENV PYTHONUNBUFFERED 1
 
 COPY requirements.txt     /app
 
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip --no-warn-script-location && \
     pip install --no-cache-dir -r ./requirements.txt --no-warn-script-location 
 
 COPY *.py                 /app/
