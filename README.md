@@ -10,12 +10,12 @@ virtual presence devices corresponding to [geofences](https://en.wikipedia.org/w
 
 * Can track any number `n` of tiles from a given Tile account.
 * Can have any number `g` of geofences. This translates to `n*g` virtual presence sensors in Hubitat.
+* Geofences can be entered as circles or complex polygons.
 
 ## Lowlights
 
 * Freshness of the signal depends both on a device (typically a phone with the Tile app installed) to see the Tile device and on how often this app calls the Tile cloud APIs.
-* Accuracy is not great. The position reported by the Tile APIs is the position of the **phone** when it was within Bluetooth range of the Tile device, and not of the position of the Tile device itself. For example, any person with the Tile app installed on their phone driving past your house could detect the Tile sensor which would "move" the last Tile device location detected to somewhere on the road. This app would in turn mark the Tile as outside of the geofence if it doesn't include the road.
-* Currently only circle geofences are supported (center + radius).
+* Accuracy is not always great. The position reported by the Tile APIs is the position of the **phone** when reported to the Tile backend it was within Bluetooth range of the Tile device, and not of the position of the Tile device itself. For example, any person with the Tile app installed on their phone driving past your house could detect the Tile sensor which would "move" the last Tile device location detected to somewhere on the road. If the Tile app is slow to report the position, then the Tile device will be reported as even further away down the road.
 
 ## Pre-requisites
 

@@ -12,7 +12,7 @@ tile:
 # To find long, lat coordinates:
 # 1- Open google maps in a browser
 # 2- Find your place of interest
-# 3- Right-click. Lat, long coordinates should be the first item in the menu
+# 3- Right-click. Lat, long coordinates should be the last item in the menu
 geofences:
   circles:
     # Entry names are free-form and used for logging purposes only.
@@ -26,7 +26,7 @@ geofences:
       # The Hubitat device must be exposed through Hubitat's MakerAPI.
       # The app will switch the hubitat presence sensor to "present" or "not present"
       # depending on if the corresponding tile is inside or outside of the given geofence.
-      tile_to_hubitat: 
+      tile_to_hubitat:
         "first": 42
         "second": 69
         "5839866d6c7fb752": 51
@@ -36,10 +36,30 @@ geofences:
       radius: 20 # Distance, in meters
       # list of tile uuid/name and associated hubitat device id for another location.
       # The hubitat ids should be distinct from the previous location.
-      tile_to_hubitat: 
+      tile_to_hubitat:
         "first": 73
         "second": 47
         "5839866d6c7fb752": 12
+  polygons:
+    # Entry names are free-form and used for logging purposes only.
+    "Paradise Inn":
+      # list of lat,long pairs representing the corners of the polygon entered in clockwise manner.
+      vertices: [
+            [46.786691, -121.734396],
+            [46.787265, -121.733677],
+            [46.786871, -121.733782],
+            [46.786722, -121.733490],
+            [46.786610, -121.733632],
+            [46.786711, -121.733927],
+            [46.786558, -121.734133],
+            [46.786668, -121.734399]
+        ]
+      # list of tile uuid/name and associated hubitat device id for another location.
+      # The hubitat ids should be distinct from the previous locations.
+      tile_to_hubitat:
+        "first": 51
+        "second": 7
+        "5839866d6c7fb752": 75
 
 # Connection info to the Hubitat hub.
 # Note: the device running the script and the hubitat hub need to be on the same LAN

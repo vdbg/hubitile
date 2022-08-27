@@ -1,4 +1,3 @@
-geopy
 pyhubitat
 pytile
 pyyaml

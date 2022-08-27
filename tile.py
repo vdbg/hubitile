@@ -8,7 +8,7 @@ from pytile.errors import TileError
 
 import logging
 
-from geofence import Geofences
+from geofence import Geofences, Point
 from hubitat import Hubitat
 
 # Code copied from
@@ -42,7 +42,7 @@ class Tiles:
     def update_hubitat(self) -> None:
         for tile in self.tiles:
             logging.debug(f"Evaluating geofences for tile {self.get_name(tile)} last updated on {tile.last_timestamp}.")
-            self.geofences.evaluate(longitude=tile.longitude, latitude=tile.latitude, name=tile.name, uuid=tile.uuid, hubitat=self.hubitat)
+            self.geofences.evaluate(Point(longitude=tile.longitude, latitude=tile.latitude), name=tile.name, uuid=tile.uuid, hubitat=self.hubitat)
 
     async def refresh(self) -> None:
         async with ClientSession() as session:
