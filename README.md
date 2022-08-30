@@ -20,7 +20,7 @@ virtual presence devices corresponding to [geofences](https://en.wikipedia.org/w
 ## Pre-requisites
 
 * A [Hubitat](https://hubitat.com/) hub.
-* A device, capable of running either Docker containers or Python, that is on the same LAN as the hub e.g., [Rasbpian](https://www.raspbian.org/) or Windows.
+* A device, capable of running either Docker containers or Python, that is on the same LAN as the hub e.g., [Raspbian](https://www.raspbian.org/) or Windows.
 * [Maker API](https://docs.hubitat.com/index.php?title=Maker_API) app installed and configured in Hubitat.
 * A `Virtual Presence` device created in Hubitat for each pair of (geofence, tile_sensor) that the app should update.
 * All of these virtual presence sensors are exported in Maker API.
@@ -32,11 +32,11 @@ Choose one of these 3 methods.
 ### Using pre-built Docker image
 
 1. `touch config.yaml`
-2. This will fail due to malformed config.yaml. That's intentional :)  
+2. This will fail due to malformed config.yaml. That's intentional :)
    ``sudo docker run --name my_hubitile -v "`pwd`/config.yaml:/app/config.yaml" vdbg/hubitile``
 3. `sudo docker cp my_hubitile:/app/template.config.yaml config.yaml`
 4. Edit `config.yaml` by following the instructions in the file
-5. `sudo docker start my_hubitile -i`  
+5. `sudo docker start my_hubitile -i`
   This will display logging on the command window allowing for rapid troubleshooting. `Ctrl-C` to stop the container if `config.yaml` is changed
 7. When done testing the config:
   * `sudo docker container rm my_hubitile`
@@ -48,11 +48,11 @@ Choose one of these 3 methods.
 1. `git clone https://github.com/vdbg/hubitile.git`
 2. `sudo docker build -t hubitile_image hubitile`
 3. `cd hubitile`
-4. `cp template.config.yaml config.yaml` 
+4. `cp template.config.yaml config.yaml`
 5. Edit `config.yaml` by following the instructions in the file
-6. Test run: ``sudo docker run --name my_hubitile -v "`pwd`/config.yaml:/app/config.yaml" hubitile_image``  
+6. Test run: ``sudo docker run --name my_hubitile -v "`pwd`/config.yaml:/app/config.yaml" hubitile_image``
    This will display logging on the command window allowing for rapid troubleshooting. `Ctrl-C` to stop the container if `config.yaml` is changed
-7. If container needs to be restarted for testing: `sudo docker start my_hubitile -i` 
+7. If container needs to be restarted for testing: `sudo docker start my_hubitile -i`
 8. When done testing the config:
   * `sudo docker container rm my_hubitile`
   * ``sudo docker run -d --name my_hubitile -v "`pwd`/config.yaml:/app/config.yaml" --restart=always --memory=100m hubitile_image``
@@ -68,7 +68,7 @@ To install:
 2. `cd hubitile`
 3. `cp template.config.yaml config.yaml`
 4. Edit `config.yaml` by following the instructions in the file
-5. `pip3 install -r requirements.txt` 
+5. `pip3 install -r requirements.txt`
 6. Run the program:
   * Interactive mode: `python3 main.py`
   * Shorter: `.\main.py` (Windows) or `./main.py` (any other OS).
