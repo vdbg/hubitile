@@ -9,7 +9,7 @@ from geofence import Geofences
 from hubitat import Hubitat
 from tile import Tiles
 
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 try:
     with open(Path(__file__).with_name("config.yaml")) as config_file:
@@ -28,7 +28,7 @@ try:
         loop_seconds: int = int(main_conf["loop_seconds"])
 
         hubitat = Hubitat(config["hubitat"])
-        geofences = Geofences(config["geofences"], hubitat.get_all_devices())
+        geofences = Geofences(config, hubitat.get_all_devices())
         tiles = Tiles(config["tile"], geofences, hubitat)
 
         asyncio.run(tiles.discover())

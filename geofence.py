@@ -1,7 +1,10 @@
+from datetime import datetime
 import math
 import logging
+from typing import Optional
 
 from hubitat import Hubitat
+from pytile.tile import Tile
 
 
 class Point:
@@ -38,47 +41,96 @@ class Point:
         return f"(lat={self.latitude}.long={self.longitude};x={self.X()},y={self.Y()})"
 
 
+class TileWrapper:
+    def __init__(self, tile: Tile):
+        self.tile = tile
+        self._fullname = f"'{self.tile.name}' ({self.tile.uuid})"
+        self._location: Point = None
+
+    async def refresh(self, api) -> None:
+        self.tile._async_request = api._async_request
+        await self.tile.async_update()
+        self._location = None
+
+    @property
+    def fullname(self) -> str:
+        return self._fullname
+
+    @property
+    def location(self) -> Point:
+        if not self._location:
+            self._location = Point(longitude=self.tile.longitude, latitude=self.tile.latitude)
+        return self._location
+
+    @property
+    def last_timestamp(self) -> Optional[datetime]:
+        return self.tile.last_timestamp
+
+    @property
+    def name(self) -> str:
+        return self.tile.name
+
+    @property
+    def uuid(self) -> str:
+        return self.tile.uuid
+
+
+class GeoConfig:
+    def __init__(self, hubitat_devices: dict[int, str]) -> None:
+        self.all_tiles: set[str] = set()
+        self.hubitatIds: set[int] = set()
+        self.hubitat_devices = hubitat_devices
+
+
 class Geofence:
 
-    def __init__(self, name: str, conf: dict, all_tiles: set[str], hubitatIds: set[int], hubitat_devices: dict[int, str]) -> None:
+    def __init__(self, name: str, conf: dict, geoconf: GeoConfig, exclusion: bool) -> None:
         self.name = name
+        self.exclusion = exclusion
+        key = "tiles"
 
-        if "tile_to_hubitat" not in conf:
-            logging.warn(f"No tiles or Hubitat devices associated with section '{name}'.")
+        if key not in conf:
+            logging.warn(f"No tiles associated with location '{name}'.")
             return
 
-        self.tiles = conf["tile_to_hubitat"]
+        self.tiles = {x: None for x in conf[key]} if exclusion else conf[key]
 
         for tile, hubitatId in self.tiles.items():
-            all_tiles.add(tile)
+            geoconf.all_tiles.add(tile)
+            if not hubitatId:
+                continue
             hubitatId = int(hubitatId)
-            if hubitatId in hubitatIds:
-                raise Exception(f"Hubitat device Id {hubitatId} is referenced in section '{name}' and another section.")
-            hubitatIds.add(hubitatId)
-            if hubitatId not in hubitat_devices:
+            if hubitatId in geoconf.hubitatIds:
+                raise Exception(f"Hubitat device Id {hubitatId} is referenced in location '{name}' and another location.")
+            geoconf.hubitatIds.add(hubitatId)
+            if not hubitatId in geoconf.hubitat_devices:
                 raise Exception(f"Hubitat device Id {hubitatId} is not a virtual presence sensor exported by Hubitat's MakerAPI.")
 
     def isInside(self, p: Point) -> bool:
         return False
 
-    def processTile(self, p: Point, name: str, uuid: str, hubitat: Hubitat) -> None:
+    def processTile(self, tile: TileWrapper, hubitat: Hubitat) -> bool:
         key: str = None
-        if name in self.tiles:
-            key = name
-        if uuid in self.tiles:
+        if tile.name in self.tiles:
+            key = tile.name
+        if tile.uuid in self.tiles:
             if key:
-                raise Exception(f"Tile '{name}' with uuid {uuid} is referenced both by name and uuid in geofence {self.name}")
-            key = uuid
+                raise Exception(f"Tile {tile.fullname} is referenced both by name and uuid in location '{self.name}'")
+            key = tile.uuid
         if not key:
-            logging.debug(f"Skipping tile  '{name}' with uuid {uuid}.")
-            return
+            logging.debug(f"Skipping tile {tile.fullname}.")
+            return False
 
-        hubitat.set_presence(id=self.tiles[key], arrived=self.isInside(p))
+        inside = self.isInside(tile.location)
+        if not self.exclusion:
+            hubitat.set_presence(id=self.tiles[key], arrived=inside)
+
+        return inside
 
 
 class PolygonFence(Geofence):
-    def __init__(self, name: str, conf: dict, all_tiles: set[str], hubitatIds: set[int], hubitat_devices: dict[int, str]) -> None:
-        super().__init__(name, conf, all_tiles, hubitatIds, hubitat_devices)
+    def __init__(self, name: str, conf: dict, geoconf: GeoConfig, exclusion: bool) -> None:
+        super().__init__(name, conf, geoconf, exclusion)
 
         vertices: list[list[float]] = conf.get("vertices", [])
 
@@ -112,8 +164,8 @@ class PolygonFence(Geofence):
 
 
 class CircleFence(Geofence):
-    def __init__(self, name: str, conf: dict, all_tiles: set[str], hubitatIds: set[int], hubitat_devices: dict[int, str]) -> None:
-        super().__init__(name, conf, all_tiles, hubitatIds, hubitat_devices)
+    def __init__(self, name: str, conf: dict, geoconf: GeoConfig, exclusion: bool) -> None:
+        super().__init__(name, conf, geoconf, exclusion)
         longitude: float = conf["longitude"]
         latitude: float = conf["latitude"]
         radius: int = conf["radius"]
@@ -144,18 +196,34 @@ class CircleFence(Geofence):
 
 class Geofences:
     def __init__(self, conf: dict, hubitat_devices: dict[int, str]) -> None:
-        self.geofences: list[Geofence] = []
-        self.tiles = set()
-        self.hubitatIds = set()
+        self.geoconf = GeoConfig(hubitat_devices)
+        self.geofences = self._get_geofences(conf, "geofences", False)
+        self.exclusions = self._get_geofences(conf, "exclusions", True)
 
+    def _get_geofences(self, rootConf: dict, key: str, exclusion: bool) -> list[Geofence]:
+        ret = []
+        if key not in rootConf:
+            return ret
+        conf = rootConf[key]
+        if not conf:
+            return ret
         if "circles" in conf:
             for name, data in conf["circles"].items():
-                self.geofences.append(CircleFence(name, data, self.tiles, self.hubitatIds, hubitat_devices))
+                ret.append(CircleFence(name, data, self.geoconf, exclusion))
 
         if "polygons" in conf:
             for name, data in conf["polygons"].items():
-                self.geofences.append(PolygonFence(name, data, self.tiles, self.hubitatIds, hubitat_devices))
+                ret.append(PolygonFence(name, data, self.geoconf, exclusion))
 
-    def evaluate(self, p: Point, name: str, uuid: str, hubitat: Hubitat) -> bool:
+        return ret
+
+    def handlesTile(self, tile: TileWrapper) -> bool:
+        return tile.name in self.geoconf.all_tiles or tile.uuid in self.geoconf.all_tiles
+
+    def evaluate(self, tile: TileWrapper, hubitat: Hubitat) -> bool:
+        for geofence in self.exclusions:
+            if geofence.processTile(tile, hubitat):
+                logging.info(f"Ignoring tile {tile.fullname} in exclusion geofence '{geofence.name}'.")
+                return
         for geofence in self.geofences:
-            geofence.processTile(p=p, name=name, uuid=uuid, hubitat=hubitat)
+            geofence.processTile(tile, hubitat)
