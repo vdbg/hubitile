@@ -44,17 +44,14 @@ class Point:
 class TileWrapper:
     def __init__(self, tile: Tile):
         self.tile = tile
-        self._fullname = f"'{self.tile.name}' ({self.tile.uuid})"
+        self.fullname = f"'{self.tile.name}' ({self.tile.uuid})"
+        self.previouslyIgnored: bool = False
         self._location: Point = None
 
     async def refresh(self, api) -> None:
         self.tile._async_request = api._async_request
         await self.tile.async_update()
         self._location = None
-
-    @property
-    def fullname(self) -> str:
-        return self._fullname
 
     @property
     def location(self) -> Point:
@@ -231,7 +228,10 @@ class Geofences:
     def evaluate(self, tile: TileWrapper, hubitat: Hubitat) -> bool:
         for geofence in self.exclusions:
             if geofence.processTile(tile, hubitat):
-                logging.info(f"Ignoring tile {tile.fullname} in exclusion geofence '{geofence.name}'.")
+                if not tile.previouslyIgnored:
+                    logging.info(f"Ignoring tile {tile.fullname} in exclusion geofence '{geofence.name}'.")
+                    tile.previouslyIgnored = True
                 return
+        tile.previouslyIgnored = False
         for geofence in self.geofences:
             geofence.processTile(tile, hubitat)
