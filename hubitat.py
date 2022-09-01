@@ -12,7 +12,7 @@ class Device:
 
 class Hubitat:
     def __init__(self, conf: dict):
-        hub = f"{conf['url']}apps/api/{conf['appid']}"
+        hub = f"{conf['url'].rstrip('/')}/apps/api/{conf['appid']}"
         logging.info(f"Connecting to hubitat Maker API app {hub}")
         self._api = MakerAPI(conf["token"], hub)
         self._devices_cache: dict[int, Device] = None
