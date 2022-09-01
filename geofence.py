@@ -38,7 +38,7 @@ class Point:
         return self.getWebMercator()[1]
 
     def __str__(self) -> str:
-        return f"(lat={self.latitude}.long={self.longitude};x={self.X()},y={self.Y()})"
+        return f"(lat={self.latitude};long={self.longitude})"
 
 
 class TileWrapper:
@@ -122,6 +122,7 @@ class Geofence:
             return False
 
         inside = self.isInside(tile.location)
+        logging.debug(f"Tile {tile.fullname} at {str(tile.location)} is {'INSIDE' if inside else 'OUTSIDE'} location '{self.name}'")
         if not self.exclusion:
             hubitat.set_presence(id=self.tiles[key], arrived=inside)
 
@@ -133,6 +134,7 @@ class PolygonFence(Geofence):
         super().__init__(name, conf, geoconf, exclusion)
 
         vertices: list[list[float]] = conf.get("vertices", [])
+        hashes: set[int] = set()
 
         if len(vertices) < 3:
             raise Exception(f"Polygon fence '{self.name}' needs at least 3 vertices.")
@@ -141,8 +143,14 @@ class PolygonFence(Geofence):
 
         for data in vertices:
             if len(data) != 2:
-                raise Exception(f"Invalid (lat,long) pair: {data}")
-            self.p.append(Point(data[0], data[1]))
+                raise Exception(f"Invalid (lat,long) pair: {data}.")
+            point = Point(data[0], data[1])
+            hash_value = hash(point.latitude) ^ hash(point.longitude)
+            if hash_value in hashes:
+                raise Exception(f"Vertex {str(point)} used twice in '{self.name}'.")
+            hashes.add(hash_value)
+
+            self.p.append(point)
 
     # Copied from http://alienryderflex.com/polygon/
     def pointInPolygon(self, x: float, y: float) -> bool:
