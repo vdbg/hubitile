@@ -16,10 +16,13 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+# Install location of upgraded pip
+ENV PATH /home/hubitile/.local/bin:$PATH
+
 COPY requirements.txt     /app
 
-RUN pip install --no-cache-dir --upgrade pip --no-warn-script-location && \
-    pip install --no-cache-dir -r ./requirements.txt --no-warn-script-location 
+RUN pip install --no-cache-dir --disable-pip-version-check --upgrade pip && \
+    pip install --no-cache-dir -r ./requirements.txt
 
 COPY *.py                 /app/
 COPY template.config.yaml /app/

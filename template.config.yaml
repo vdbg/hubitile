@@ -1,18 +1,13 @@
 
 tile:
-  username: user@email.com      # Tile's login
-  password: "strong password"   # Tile's password
-  # uuids (recommended) or names of tiles to track; e.g., [ "first", "second", "5839866d6c7fb752" ] 
-  # If left empty, all tiles are tracked.
-  # Names are more user friendly, uuids are safer (not affected by renames, unique).
-  # uuids are logged by the app on startup
-  tiles: []
+  username: user@email.com      # Tile's login.
+  password: "strong password"   # Tile's password.
 
-# List of geofences
+# List of geofences.
 # To find long, lat coordinates:
-# 1- Open google maps in a browser
-# 2- Find your place of interest
-# 3- Right-click. Lat, long coordinates should be the last item in the menu
+# 1- Open google maps in a browser,
+# 2- Find your place of interest,
+# 3- Right-click. Lat, long coordinates should be the last item in the menu.
 geofences:
   circles:
     # Entry names are free-form and used for logging purposes only.
@@ -20,30 +15,30 @@ geofences:
     "Statue of liberty":
       latitude: 40.689412
       longitude: -74.043964
-      radius: 30 # Distance, in meters
+      radius: 30 # Distance, in meters.
       # Keys are the tile uuid (recommended) or name.
       # Values are the Hubitat "Virtual Presence" device id (integer).
       # The Hubitat device must be exposed through Hubitat's MakerAPI.
       # The app will switch the hubitat presence sensor to "present" or "not present"
-      # depending on if the corresponding tile is inside or outside of the given geofence.
-      tile_to_hubitat:
+      # depending on if the corresponding tile is inside or outside of the given location.
+      tiles:
         "first": 42
         "second": 69
         "5839866d6c7fb752": 51
     "Las Vegas Luxor Palace":
       latitude: 36.095551
       longitude: -115.175520
-      radius: 20 # Distance, in meters
-      # list of tile uuid/name and associated hubitat device id for another location.
-      # The hubitat ids should be distinct from the previous location.
-      tile_to_hubitat:
+      radius: 20 # Distance, in meters.
+      # Dictionary of tile uuid/name and associated hubitat device id for another location.
+      # The hubitat ids should be distinct from the other locations.
+      tiles:
         "first": 73
         "second": 47
         "5839866d6c7fb752": 12
   polygons:
     # Entry names are free-form and used for logging purposes only.
     "Paradise Inn":
-      # list of lat,long pairs representing the corners of the polygon entered in clockwise manner.
+      # List of lat,long pairs representing the corners of the polygon entered in clockwise manner.
       vertices: [
             [46.786691, -121.734396],
             [46.787265, -121.733677],
@@ -54,21 +49,39 @@ geofences:
             [46.786558, -121.734133],
             [46.786668, -121.734399]
         ]
-      # list of tile uuid/name and associated hubitat device id for another location.
-      # The hubitat ids should be distinct from the previous locations.
-      tile_to_hubitat:
+      # Dictionary of tile uuid/name and associated hubitat device id for another location.
+      # The hubitat ids should be distinct from the other locations.
+      tiles:
         "first": 51
         "second": 7
         "5839866d6c7fb752": 75
 
+# Exclusions is an optional list of geofences for reported positions to ignore.
+# A typical scenario is having a busy road in front of your house, which causes your Tile sensors
+# to be reported as traveling down the road while they are inside the house (picked up by a passing
+# car + it takes seconds for the Tile app to record and send the position).
+exclusions:
+  # The same shapes are supported (circles and polygons). Here we're only showing a polygon as example.
+  # The difference is that tiles is a list of tiles to ignore instead of a dictionary of tile and hubitat Ids.
+  polygons:
+    "The Pentagon":
+      vertices: [
+        [38.872746, -77.058326],
+        [38.873013, -77.054593],
+        [38.870741, -77.053220],
+        [38.868853, -77.055687],
+        [38.870123, -77.058863]
+      ]
+      tiles: [ "first", "second", "5839866d6c7fb752" ]
+
 # Connection info to the Hubitat hub.
 # Note: the device running the script and the hubitat hub need to be on the same LAN
 hubitat:
-  url: 'http://ipaddress/'               # What you type in the browser to log on to Hubitat
-  appid: 123                             # Log in to Hubitat, go in Apps, Maker API. The Id in is in the url
-  token: 'enter your hubitat token here' # Log in to Hubitat, go in Apps, Maker API, The token is in the examples
+  url: 'http://ipaddress/'               # What you type in the browser to log on to Hubitat.
+  appid: 123                             # Log in to Hubitat, go in Apps, Maker API. The Id in is in the url.
+  token: 'enter your hubitat token here' # Log in to Hubitat, go in Apps, Maker API, The token is in the examples.
   
 main:
-  logverbosity: INFO # by increasing level of verbosity: FATAL, ERROR, WARNING, INFO, DEBUG
-  loop_seconds: 180  # How often to check the tile APIs
+  logverbosity: INFO # by increasing level of verbosity: FATAL, ERROR, WARNING, INFO, DEBUG.
+  loop_seconds: 180  # How often to check the tile APIs.
 

@@ -3,12 +3,11 @@ from functools import wraps
 from aiohttp import ClientSession
 
 from pytile import async_login
-from pytile.tile import Tile
 from pytile.errors import TileError
 
 import logging
 
-from geofence import Geofences, Point
+from geofence import Geofences, TileWrapper
 from hubitat import Hubitat
 
 # Code copied from
@@ -37,20 +36,19 @@ class Tiles:
         self.password = tile_conf["password"]
         self.geofences = geofences
         self.hubitat = hubitat
-        self.tiles: set[Tile] = set()
+        self.tiles: set[TileWrapper] = set()
 
     def update_hubitat(self) -> None:
         for tile in self.tiles:
-            logging.debug(f"Evaluating geofences for tile {self.get_name(tile)} last updated on {tile.last_timestamp}.")
-            self.geofences.evaluate(Point(longitude=tile.longitude, latitude=tile.latitude), name=tile.name, uuid=tile.uuid, hubitat=self.hubitat)
+            logging.debug(f"Evaluating geofences for tile {tile} last updated on {tile.last_timestamp}.")
+            self.geofences.evaluate(tile, self.hubitat)
 
     async def refresh(self) -> None:
         async with ClientSession() as session:
             try:
                 api = await async_login(self.user, self.password, session)
                 for tile in self.tiles:
-                    tile._async_request = api._async_request
-                    await tile.async_update()
+                    await tile.refresh(api)
             except TileError as err:
                 logging.error(err)
 
@@ -63,14 +61,12 @@ class Tiles:
 
                 tiles = await api.async_get_tiles()
 
-                for tile in tiles.values():
-                    if tile.name in self.geofences.tiles or tile.uuid in self.geofences.tiles:
-                        logging.info(f"Tracking tile {self.get_name(tile)}.")
+                for tileData in tiles.values():
+                    tile = TileWrapper(tileData)
+                    if self.geofences.handlesTile(tile):
+                        logging.info(f"Tracking tile {tile}.")
                         self.tiles.add(tile)
                     else:
-                        logging.warn(f"Not tracking tile {self.get_name(tile)}.")
+                        logging.warn(f"Not tracking tile {tile}.")
             except TileError as err:
                 logging.error(err)
-
-    def get_name(self, tile: Tile) -> str:
-        return f"'{tile.name}' ({tile.uuid})"
