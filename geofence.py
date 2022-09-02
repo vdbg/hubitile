@@ -40,6 +40,12 @@ class Point:
     def __str__(self) -> str:
         return f"(lat={self.latitude};long={self.longitude})"
 
+    def __eq__(self, other) -> bool:
+        return self.longitude == other.longitude and self.latitude == other.latitude
+
+    def __hash__(self) -> int:
+        return hash(self.latitude) ^ hash(self.longitude)
+
 
 class TileWrapper:
     def __init__(self, tile: Tile):
@@ -97,13 +103,13 @@ class Geofence:
 
         for tile, hubitatId in self.tiles.items():
             geoconf.all_tiles.add(tile)
-            if not hubitatId:
+            if hubitatId is None:
                 continue
             hubitatId = int(hubitatId)
             if hubitatId in geoconf.hubitatIds:
                 raise Exception(f"Hubitat device Id {hubitatId} is referenced in location '{self}' and another location.")
             geoconf.hubitatIds.add(hubitatId)
-            if not hubitatId in geoconf.hubitat_devices:
+            if hubitatId not in geoconf.hubitat_devices:
                 raise Exception(f"Hubitat device Id {hubitatId} is not a virtual presence sensor exported by Hubitat's MakerAPI.")
 
     def __str__(self) -> str:
@@ -137,7 +143,7 @@ class PolygonFence(Geofence):
         super().__init__(name, conf, geoconf, exclusion)
 
         vertices: list[list[float]] = conf.get("vertices", [])
-        hashes: set[int] = set()
+        hashes: set[Point] = set()
 
         if len(vertices) < 3:
             raise Exception(f"Polygon fence '{self}' needs at least 3 vertices.")
@@ -148,10 +154,9 @@ class PolygonFence(Geofence):
             if len(data) != 2:
                 raise Exception(f"Invalid (lat,long) pair: {data}.")
             point = Point(data[0], data[1])
-            hash_value = hash(point.latitude) ^ hash(point.longitude)
-            if hash_value in hashes:
+            if point in hashes:
                 raise Exception(f"Vertex {point} used twice in '{self}'.")
-            hashes.add(hash_value)
+            hashes.add(point)
 
             self.p.append(point)
 
