@@ -45,13 +45,16 @@ class TileWrapper:
     def __init__(self, tile: Tile):
         self.tile = tile
         self.fullname = f"'{self.tile.name}' ({self.tile.uuid})"
-        self.previouslyIgnored: bool = False
+        self.previously_ignored: bool = False
         self._location: Point = None
 
     async def refresh(self, api) -> None:
         self.tile._async_request = api._async_request
         await self.tile.async_update()
         self._location = None
+
+    def __str__(self) -> str:
+        return self.fullname
 
     @property
     def location(self) -> Point:
@@ -98,10 +101,13 @@ class Geofence:
                 continue
             hubitatId = int(hubitatId)
             if hubitatId in geoconf.hubitatIds:
-                raise Exception(f"Hubitat device Id {hubitatId} is referenced in location '{name}' and another location.")
+                raise Exception(f"Hubitat device Id {hubitatId} is referenced in location '{self}' and another location.")
             geoconf.hubitatIds.add(hubitatId)
             if not hubitatId in geoconf.hubitat_devices:
                 raise Exception(f"Hubitat device Id {hubitatId} is not a virtual presence sensor exported by Hubitat's MakerAPI.")
+
+    def __str__(self) -> str:
+        return self.name
 
     def isInside(self, p: Point) -> bool:
         return False
@@ -112,14 +118,14 @@ class Geofence:
             key = tile.name
         if tile.uuid in self.tiles:
             if key:
-                raise Exception(f"Tile {tile.fullname} is referenced both by name and uuid in location '{self.name}'")
+                raise Exception(f"Tile {tile} is referenced both by name and uuid in location '{self}'")
             key = tile.uuid
         if not key:
-            logging.debug(f"Skipping tile {tile.fullname}.")
+            logging.debug(f"Skipping tile {tile}.")
             return False
 
         inside = self.isInside(tile.location)
-        logging.debug(f"Tile {tile.fullname} at {str(tile.location)} is {'INSIDE' if inside else 'OUTSIDE'} location '{self.name}'")
+        logging.debug(f"Tile {tile} at {tile.location} is {'INSIDE' if inside else 'OUTSIDE'} location '{self}'")
         if not self.exclusion:
             hubitat.set_presence(id=self.tiles[key], arrived=inside)
 
@@ -134,7 +140,7 @@ class PolygonFence(Geofence):
         hashes: set[int] = set()
 
         if len(vertices) < 3:
-            raise Exception(f"Polygon fence '{self.name}' needs at least 3 vertices.")
+            raise Exception(f"Polygon fence '{self}' needs at least 3 vertices.")
 
         self.p: list[Point] = []
 
@@ -144,7 +150,7 @@ class PolygonFence(Geofence):
             point = Point(data[0], data[1])
             hash_value = hash(point.latitude) ^ hash(point.longitude)
             if hash_value in hashes:
-                raise Exception(f"Vertex {str(point)} used twice in '{self.name}'.")
+                raise Exception(f"Vertex {point} used twice in '{self}'.")
             hashes.add(hash_value)
 
             self.p.append(point)
@@ -195,7 +201,7 @@ class CircleFence(Geofence):
 
     def isInside(self, p: Point) -> bool:
         distance = self.getDistance(self.center, p)
-        logging.debug(f"Distance to '{self.name}': {distance} m")
+        logging.debug(f"Distance to '{self}': {distance} m")
         return distance <= self.radius
 
 
@@ -228,10 +234,10 @@ class Geofences:
     def evaluate(self, tile: TileWrapper, hubitat: Hubitat) -> bool:
         for geofence in self.exclusions:
             if geofence.processTile(tile, hubitat):
-                if not tile.previouslyIgnored:
-                    logging.info(f"Ignoring tile {tile.fullname} in exclusion geofence '{geofence.name}'.")
-                    tile.previouslyIgnored = True
+                if not tile.previously_ignored:
+                    logging.info(f"Ignoring tile {tile} in exclusion geofence '{geofence}'.")
+                    tile.previously_ignored = True
                 return
-        tile.previouslyIgnored = False
+        tile.previously_ignored = False
         for geofence in self.geofences:
             geofence.processTile(tile, hubitat)

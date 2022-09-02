@@ -40,7 +40,7 @@ class Tiles:
 
     def update_hubitat(self) -> None:
         for tile in self.tiles:
-            logging.debug(f"Evaluating geofences for tile {tile.fullname} last updated on {tile.last_timestamp}.")
+            logging.debug(f"Evaluating geofences for tile {tile} last updated on {tile.last_timestamp}.")
             self.geofences.evaluate(tile, self.hubitat)
 
     async def refresh(self) -> None:
@@ -64,9 +64,9 @@ class Tiles:
                 for tileData in tiles.values():
                     tile = TileWrapper(tileData)
                     if self.geofences.handlesTile(tile):
-                        logging.info(f"Tracking tile {tile.fullname}.")
+                        logging.info(f"Tracking tile {tile}.")
                         self.tiles.add(tile)
                     else:
-                        logging.warn(f"Not tracking tile {tile.fullname}.")
+                        logging.warn(f"Not tracking tile {tile}.")
             except TileError as err:
                 logging.error(err)
